@@ -3,8 +3,8 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-val appVersionName = (findProperty("appVersionName") as String?) ?: "2.16.1"
-val appVersionCode = ((findProperty("appVersionCode") as String?) ?: "2161").toInt()
+val appVersionName = (findProperty("appVersionName") as String?) ?: "3.0.0"
+val appVersionCode = ((findProperty("appVersionCode") as String?) ?: "3000").toInt()
 val ksPass = System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotEmpty() } ?: "opencodemob"
 
 android {
@@ -18,7 +18,7 @@ android {
         versionCode = appVersionCode
         versionName = appVersionName
         ndk { abiFilters.add("arm64-v8a") }
-        buildConfigField("String", "GITHUB_REPO", "\"omEZZka/OCM\"")
+        buildConfigField("String", "GITHUB_REPO", "\"omEZZka/OCM-Unified\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${System.getenv("GOOGLE_WEB_CLIENT_ID") ?: ""}\"")
     }
 

@@ -89,6 +89,12 @@
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|uiMode|density|fontScale"
             android:hardwareAccelerated="true" />
 
+        <activity
+            android:name=".EngineActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|uiMode|density|fontScale"
+            android:hardwareAccelerated="true" />
+
         <service
             android:name=".ServerTileService"
             android:exported="true"
@@ -143,6 +149,15 @@
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="local_coding_agent_server" />
+        </service>
+
+        <service
+            android:name=".EngineService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="local_agent_engine_server" />
         </service>
 
         <provider

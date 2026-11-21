@@ -3756,3 +3756,23 @@ html.night-lamp #msgs { filter: brightness(.92) sepia(.14); }
 .settings-count { padding: 2px 4px 6px; }
 .settings-tabs { position: relative; }
 .settings-tabs button { transition: background .15s, color .15s; }
+
+/* ==========================================================================
+   INTERFACES (settings → Interface): agent-engine switcher
+   ========================================================================== */
+.eng-pill {
+  font-size: 11px;
+  line-height: 1;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line2);
+  color: var(--mut);
+  white-space: nowrap;
+}
+.eng-pill.on {
+  color: var(--acc-fg);
+  background: var(--acc);
+  border-color: var(--acc);
+  font-weight: 600;
+}
+.note.err { color: var(--err); }

@@ -106,6 +106,29 @@ OC.ciState = () => {
 };
 OC.ciSaveToken = (id, provider, token) => { ciStore['ci_' + provider] = token; setTimeout(() => OCEvent && OCEvent('ci-save', { id, ok: true }), 30); };
 OC.ciClearToken = provider => { delete ciStore['ci_' + provider]; };
+// ---- agent engines (engines.js) ----
+const engState = { id: '', port: 0, ready: false, phase: 'idle', error: '' };
+let engCurrent = 'opencode';
+const engCat = [
+  { id: 'opencode', title: 'OpenCode', subtitle: 'built-in', web: false, port: 0 },
+  { id: 'hermes', title: 'Hermes Agent', subtitle: 'Nous Research', web: true, port: 23411 },
+  { id: 'titan', title: 'TITAN', subtitle: 'Mission Control', web: true, port: 23412 },
+  { id: 'titan-cli', title: 'TITAN CLI', subtitle: 'token filtering', web: false, port: 0 },
+];
+window.__eng = engState;
+OC.engines = () => JSON.stringify({ engines: engCat, current: engCurrent, state: engState });
+OC.engineSelect = id => {
+  engCurrent = id;
+  const e = engCat.find(x => x.id === id);
+  if (e && e.web) { engState.id = id; engState.port = e.port; engState.phase = 'starting'; setTimeout(() => { engState.ready = true; engState.phase = 'ready'; OCEvent && OCEvent('engine', engState); }, 40); }
+  else { engState.id = id; engState.ready = false; engState.phase = id === 'titan-cli' ? 'cli' : 'idle'; }
+};
+OC.engineStop = () => { engState.ready = false; engState.phase = 'down'; };
+OC.engineOpen = id => { window.__engineOpened = id; };
+OC.enginesInstall = () => {
+  setTimeout(() => OCEvent && OCEvent('enginesInstall', { step: 'Hermes Agent', pct: 35 }), 20);
+  setTimeout(() => OCEvent && OCEvent('enginesInstall', { done: true }), 60);
+};
 OC.ciRequest = (id, provider, method, path, body) => {
   setTimeout(() => OCEvent && OCEvent('ci-resp', { id, status: 200, body: { login: 'mock-user', message: 'ok' } }), 50);
 };

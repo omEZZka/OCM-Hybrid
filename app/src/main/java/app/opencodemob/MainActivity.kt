@@ -68,6 +68,7 @@ class MainActivity : ComponentActivity() {
     private var fileCb: ValueCallback<Array<Uri>>? = null
     private var lastReady = false
     private var lastPhase = ""
+    private var lastEngineKey = ""
     private var stt: SpeechInput? = null
     private var tts: Speaker? = null
     private var voiceRec: android.media.MediaRecorder? = null
@@ -433,6 +434,12 @@ class MainActivity : ComponentActivity() {
         val ph = ServerState.phase
         if (ph != lastPhase) { lastPhase = ph; emit("phase", JSONObject().put("phase", ph)) }
         if (e == null) lastErr = null
+        // Engine status is polled the same way; only a real change is pushed to the page.
+        val ek = EngineState.id + "|" + EngineState.phase + "|" + EngineState.ready + "|" + (EngineState.error ?: "")
+        if (ek != lastEngineKey) {
+            lastEngineKey = ek
+            emit("engine", EngineState.json())
+        }
         ui.postDelayed({ watch() }, 1000)
     }
 
@@ -1746,6 +1753,54 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface fun wsOpen(id: String, path: String) { Net.wsOpen(id, path) { n, d -> emit(n, d) } }
         @JavascriptInterface fun wsSend(id: String, text: String) { Net.wsSend(id, text) }
         @JavascriptInterface fun wsClose(id: String) { Net.wsClose(id) }
+
+        // --- agent engines: built-in opencode core plus Hermes / TITAN / TITAN CLI ---
+        @JavascriptInterface fun engines(): String = Engines.describe(this@MainActivity)
+
+        @JavascriptInterface fun engineSelect(id: String) {
+            val spec = Engines.byId(id) ?: return
+            Engines.setCurrent(this@MainActivity, id)
+            if (id == "titan-cli") {
+                runOnUiThread { emit("engine", EngineState.json().put("id", id).put("phase", "cli")) }
+                return
+            }
+            // Only one external engine at a time, and never alongside a freshly selected core.
+            stopService(Intent(this@MainActivity, EngineService::class.java))
+            if (!spec.web) return
+            runOnUiThread {
+                ContextCompat.startForegroundService(
+                    this@MainActivity,
+                    Intent(this@MainActivity, EngineService::class.java)
+                        .putExtra("engine", id).putExtra("uid", ensureUid())
+                )
+            }
+        }
+
+        @JavascriptInterface fun engineStop() {
+            stopService(Intent(this@MainActivity, EngineService::class.java))
+            EngineState.ready = false
+            EngineState.phase = "down"
+        }
+
+        @JavascriptInterface fun engineOpen(id: String) {
+            val spec = Engines.byId(id) ?: return
+            if (!spec.web) return
+            runOnUiThread { EngineActivity.open(this@MainActivity, id, Engines.port(this@MainActivity, spec)) }
+        }
+
+        /** Installs the external engines into the proot rootfs (needs network; sizeable). */
+        @JavascriptInterface fun enginesInstall() {
+            thread {
+                try {
+                    Runtime.installEngines(this@MainActivity, ensureUid()) { step, pct ->
+                        emit("enginesInstall", JSONObject().put("step", step).put("pct", pct))
+                    }
+                    emit("enginesInstall", JSONObject().put("done", true))
+                } catch (e: Throwable) {
+                    emit("enginesInstall", JSONObject().put("error", e.message ?: e.toString()))
+                }
+            }
+        }
 
         // --- files (paths as the agent sees them) ---
         @JavascriptInterface fun ls(path: String): String = Runtime.ls(this@MainActivity, uid(), path).toString()

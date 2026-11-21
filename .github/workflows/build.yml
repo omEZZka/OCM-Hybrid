@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 env:
-  VERSION_NAME: "2.23.1"
+  VERSION_NAME: "3.0.0"
 
 jobs:
   build:
@@ -86,18 +86,21 @@ jobs:
         run: |
           # Stay above every previously published versionCode (the 1.1.x upstream-client line
           # reached 29887625), so this build installs over anything shipped before it.
-          CODE=$((29888000 + GITHUB_RUN_NUMBER))
+          CODE=$((31000000 + GITHUB_RUN_NUMBER))
           gradle :app:assembleRelease --no-daemon -PappVersionName="$VERSION_NAME" -PappVersionCode="$CODE"
-          cp app/build/outputs/apk/release/app-release.apk "OpenCode-${VERSION_NAME}-${CODE}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "OpenCodeUnified-${VERSION_NAME}-${CODE}.apk"
           {
             echo "OpenCode Mobile ${VERSION_NAME}"
             echo
             echo "Core: opencode $(grep opencode_core runtime-info.txt | cut -d= -f2) (1.x line) + Linux rootfs proot"
             echo
-            echo "2.23.1 — мини-апдейт:"
-            echo "- Настройки: свайп влево/вправо переключает вкладки (Основное ↔ Агент ↔ Система), плавный слайд, подсказка при первом открытии"
-            echo "- Интуитивность: счётчик найденных настроек под поиском, анимация смены вкладок"
-            echo "- Джейлбрейк только на сессию: меню сессии (long-press на заголовок) → «Джейлбрейки этого чата» — свой набор для одного чата, остальные следуют глобальному; кнопка «Использовать глобальный набор»"
+            echo "3.0.0 — четыре агента в одном приложении:"
+            echo "- Настройки → Интерфейс: переключение между OpenCode, Hermes Agent, TITAN и TITAN CLI"
+            echo "- Hermes Agent (Nous Research): самообучающийся агент со своей веб-панелью"
+            echo "- TITAN: Mission Control, команда агентов и общая память"
+            echo "- TITAN CLI: сжатие токенов (filter / compress / benchmark) в терминале"
+            echo "- Движки ставятся в общее Linux-окружение кнопкой «Установить движки»"
+            echo "- Панели движков открываются в изолированном окне без доступа к данным приложения"
             echo
             echo "Telegram: https://t.me/OpenCodeMob"
           } > notes.md
@@ -106,7 +109,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: OpenCode ${{ env.VERSION_NAME }} (build ${{ github.run_number }})
+          name: OpenCode Unified ${{ env.VERSION_NAME }} (build ${{ github.run_number }})
           body_path: notes.md
-          files: OpenCode-*.apk
+          files: OpenCodeUnified-*.apk
           make_latest: true

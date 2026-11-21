@@ -168,6 +168,12 @@ O.openSettings=()=>{
   });
   const themeName=(O.themeById&&O.themeById(S.opts.theme).name)||S.opts.theme;
   const themeRow=O.listRow('palette',O.tr('Theme & Font Size','Тема и размер текста'),themeName+', '+S.opts.fs+'px',O.icon('chevR'),()=>O.openThemes());
+  // Interface switcher: which agent engine drives the app (built-in OpenCode, Hermes, TITAN, TITAN CLI).
+  const ifaceName=()=>{try{const id=O.engineCurrent&&O.engineCurrent();const m={opencode:'OpenCode',hermes:'Hermes Agent',titan:'TITAN','titan-cli':'TITAN CLI'};return m[id]||'OpenCode'}catch(e){return 'OpenCode'}};
+  const ifaceRow=O.listRow('swap',O.tr('Interface','Интерфейс'),ifaceName()+' — '+O.tr('change the agent engine','сменить движок агента'),O.icon('chevR'),()=>{
+    O.openInterfaces&&O.openInterfaces();
+    setTimeout(()=>{const sp=ifaceRow.querySelector('.settings-row-text span');if(sp)sp.textContent=ifaceName()+' — '+O.tr('change the agent engine','сменить движок агента')},600);
+  });
   const thinkRow=O.toggleRow('bulb',O.tr('Show Reasoning / Thinking','Показывать размышления'),O.tr('Display model thought process in responses','Блоки размышлений в ответах'),S.opts.thinking,v=>{S.opts.thinking=v;O.saveOpts();O.chat.renderAll()});
   const ov=O.native.overlayState?O.native.overlayState():{};
   const overlayRow=O.toggleRow('ghost',O.tr('Floating status bubble','Плавающий индикатор'),
@@ -226,7 +232,7 @@ O.openSettings=()=>{
   const focusRow=O.toggleRow('eye',O.tr('Focus mode','Фокус-режим'),O.tr('Hide panels — only the conversation','Скрыть панели — только переписка'),O.focusMode(),v=>O.setFocusMode(v));
   const dryRow=O.toggleRow('shield',O.tr('Dry-run mode','Режим Dry-run'),O.tr('Agent proposes commands and diffs without executing','Агент предлагает команды и diff без выполнения'),O.dryRun(),v=>O.setDryRun(v));
   const tourRow=O.listRow('info',O.tr('Feature tour','Обучающий тур'),O.tr('Show the welcome guide again','Показать приветственный гид ещё раз'),O.icon('chevR'),()=>{s.close();setTimeout(()=>O.openTour(),200)});
-  appCard.append(langRow,themeRow,thinkRow,detailRow,planRow,styleRow,fastRow,autoCompactRow,hapticRow,animRow,lampRow,stageRow,memoryRow,tplRow,focusRow,dryRow,tilesRow,navRow,tourRow,overlayRow,overlayLegend,onlyBusyRow);
+  appCard.append(langRow,ifaceRow,themeRow,thinkRow,detailRow,planRow,styleRow,fastRow,autoCompactRow,hapticRow,animRow,lampRow,stageRow,memoryRow,tplRow,focusRow,dryRow,tilesRow,navRow,tourRow,overlayRow,overlayLegend,onlyBusyRow);
   panes.main.append(appCard);
 
   // 4. Notifications & Sounds
