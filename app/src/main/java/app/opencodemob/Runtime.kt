@@ -376,7 +376,7 @@ object Runtime {
             put("PROOT_TMP_DIR", ptmp.path)
             put("HOME", "/root"); put("USER", "root"); put("SHELL", "/bin/bash")
             put("LANG", "C.UTF-8"); put("TERM", "dumb"); put("TMPDIR", "/tmp")
-            put("PATH", "/root/.local/bin:/root/.local/titan/bin:/root/.local/titancli/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
+            put("PATH", "/root/.local/node/bin:/root/.local/bin:/root/.local/titan/bin:/root/.local/titancli/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
             put("DISABLE_TELEMETRY", "1"); put("DO_NOT_TRACK", "1")
             put("HERMES_SKIP_BUILD", "1")
             put("NODE_ENV", "production")
@@ -397,7 +397,7 @@ object Runtime {
             put("PROOT_TMP_DIR", ptmp.path)
             put("HOME", "/root"); put("USER", "root"); put("SHELL", "/bin/bash")
             put("LANG", "C.UTF-8"); put("TERM", "dumb"); put("TMPDIR", "/tmp")
-            put("PATH", "/root/.local/bin:/root/.local/titan/bin:/root/.local/titancli/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
+            put("PATH", "/root/.local/node/bin:/root/.local/bin:/root/.local/titan/bin:/root/.local/titancli/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
             put("OPENCODE_DISABLE_AUTOUPDATE", "1")
         }
         return pb.start()
@@ -761,7 +761,7 @@ For example:
             if (noSeccomp) put("PROOT_NO_SECCOMP", "1")
             put("HOME", "/root"); put("USER", "root"); put("SHELL", "/bin/bash")
             put("LANG", "C.UTF-8"); put("TERM", "xterm-256color"); put("TMPDIR", "/tmp")
-            put("PATH", "/root/.local/bin:/root/.local/titan/bin:/root/.local/titancli/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
+            put("PATH", "/root/.local/node/bin:/root/.local/bin:/root/.local/titan/bin:/root/.local/titancli/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
             put("OPENCODE_SERVER_USERNAME", "opencode")
             put("OPENCODE_SERVER_PASSWORD", password)
             put("OPENCODE_DISABLE_AUTOUPDATE", "1") // stay on 1.x: no `upgrade --major` behind our back
@@ -773,76 +773,51 @@ For example:
     }
 
     /**
-     * Installs the external engines into the shared rootfs. They live next to the built-in core
-     * and are reached over loopback only; nothing here touches the user's own keys or config.
-     *
-     * Hermes Agent  -> pipx-style venv in /opt/hermes, launcher /usr/local/bin/hermes
-     * TITAN         -> npm global package `titan-agent`, launcher /usr/local/bin/titan
-     * TITAN CLI     -> npm global package `titan-agent-cli`, launcher /usr/local/bin/titan-filter
-     */
-    /**
      * Installs the external engines **into the user's HOME** (`files/users/<uid>/home`), never into
      * the rootfs. That directory survives every core update and every rootfs re-install, so the
      * expensive Python/Node installs are downloaded once and never lost when the app updates.
      *
-     *   Hermes Agent -> /root/.local/hermes/venv, launcher /root/.local/bin/hermes
-     *   TITAN        -> npm prefix /root/.local/titan      (bin/titan)
-     *   TITAN CLI    -> npm prefix /root/.local/titancli   (bin/titan-filter)
-     *
-     * The two npm packages both ship a binary called `titan`, so they get separate prefixes;
-     * a shared one silently clobbered TITAN with the token filter.
+     * The heavy lifting lives in `assets/engines/install-engines.sh`: it is copied into the
+     * proot HOME and executed there, so the install logic can be edited (and tested with `sh -n`)
+     * without rebuilding Kotlin. It reports progress as `@@STEP` / `@@PCT` / `@@ERR` lines.
      */
     @Synchronized
     fun installEngines(c: Context, uid: String, progress: (String, Int) -> Unit) {
-        fun run(cmd: List<String>, timeoutSec: Long = 1800): Pair<Int, String> {
-            val p = prootRun(c, uid, cmd)
-            val out = StringBuilder()
-            val reader = kotlin.concurrent.thread(isDaemon = true) {
-                try {
-                    p.inputStream.bufferedReader().forEachLine { line ->
-                        if (out.length < 200_000) out.append(line).append('\n')
-                    }
-                } catch (_: Exception) {}
+        val home = home(c, uid)
+        val scriptDir = File(home, ".local/engines").apply { mkdirs() }
+        val script = File(scriptDir, "install-engines.sh")
+        try {
+            c.assets.open("engines/install-engines.sh").use { inp ->
+                script.outputStream().use { out -> inp.copyTo(out) }
             }
-            val done = p.waitFor(timeoutSec, java.util.concurrent.TimeUnit.SECONDS)
-            if (!done) { try { p.destroyForcibly() } catch (_: Exception) {} }
-            reader.join(3000)
-            return Pair(if (done) p.exitValue() else -1, out.toString())
+            Os.chmod(script.path, 0x1ED) // 0755
+        } catch (e: Exception) {
+            throw IOException("Не удалось подготовить установщик движков: ${e.message}")
         }
 
-        progress("Подготовка окружения", 2)
-        run(listOf("/bin/sh", "-lc", "mkdir -p /root/.local/bin /root/.local/titan /root/.local/titancli /root/.local/hermes"))
-
-        progress("Python (Hermes Agent)", 8)
-        run(listOf("/bin/sh", "-lc",
-            "command -v python3 >/dev/null || apt-get install -y --no-install-recommends python3 python3-venv python3-pip >/dev/null 2>&1"))
-
-        progress("Установка Hermes Agent", 20)
-        val (hcode, hlog) = run(listOf("/bin/sh", "-lc",
-            "set -e; " +
-                // A venv created against a different base python after a core update is stale:
-                // rebuild it instead of failing with a cryptic interpreter error.
-                "if [ -x /root/.local/hermes/venv/bin/python3 ] && /root/.local/hermes/venv/bin/python3 -c 'import sys' 2>/dev/null; then :; else rm -rf /root/.local/hermes/venv; python3 -m venv /root/.local/hermes/venv; fi; " +
-                "/root/.local/hermes/venv/bin/pip install --no-cache-dir --upgrade pip >/dev/null; " +
-                "/root/.local/hermes/venv/bin/pip install --no-cache-dir 'hermes-agent' " +
-                "&& printf '#!/bin/sh\nexec /root/.local/hermes/venv/bin/hermes \"$@\"\n' > /root/.local/bin/hermes " +
-                "&& chmod +x /root/.local/bin/hermes"))
-        if (hcode != 0) throw IOException("Hermes Agent не установился:\n" + hlog.takeLast(1500))
-
-        progress("Node.js (TITAN)", 55)
-        run(listOf("/bin/sh", "-lc",
-            "command -v npm >/dev/null || apt-get install -y --no-install-recommends nodejs npm >/dev/null 2>&1"))
-
-        progress("Установка TITAN", 65)
-        val (tcode, tlog) = run(listOf("/bin/sh", "-lc",
-            "set -e; npm install -g --prefix /root/.local/titan --no-audit --no-fund titan-agent@latest"))
-        if (tcode != 0) throw IOException("TITAN не установился:\n" + tlog.takeLast(1500))
-
-        progress("Установка TITAN CLI", 85)
-        val (ccode, clog) = run(listOf("/bin/sh", "-lc",
-            "set -e; npm install -g --prefix /root/.local/titancli --no-audit --no-fund titan-agent-cli@latest"))
-        if (ccode != 0) throw IOException("TITAN CLI не установился:\n" + clog.takeLast(1500))
-
+        val p = prootRun(c, uid, listOf("/bin/sh", "-c", "cd /root/.local/engines && exec /bin/sh ./install-engines.sh"))
+        val tail = StringBuilder()
+        var step = "Подготовка"
+        var pct = 0
+        var error: String? = null
+        try {
+            p.inputStream.bufferedReader().forEachLine { line ->
+                when {
+                    line.startsWith("@@STEP ") -> { step = line.removePrefix("@@STEP ").trim(); progress(step, pct) }
+                    line.startsWith("@@PCT ") -> { pct = line.removePrefix("@@PCT ").trim().toIntOrNull() ?: pct; progress(step, pct) }
+                    line.startsWith("@@ERR ") -> error = line.removePrefix("@@ERR ").trim()
+                    else -> {
+                        if (tail.length < 20_000) tail.append(line).append('\n')
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+        val code = try { p.waitFor() } catch (_: Exception) { -1 }
+        if (error != null) throw IOException(error!!)
+        if (code != 0) {
+            val t = tail.toString().trim()
+            throw IOException("Установка движков прервалась (код $code)." + if (t.isNotEmpty()) "\n" + t.takeLast(1200) else "")
+        }
         progress("Готово", 100)
     }
 

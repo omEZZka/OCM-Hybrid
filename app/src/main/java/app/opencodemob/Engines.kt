@@ -32,13 +32,20 @@ object Engines {
     val all = listOf(
         Spec("opencode", "OpenCode", "Встроенный агент: чат, файлы, терминал", "", "", false) { emptyList() },
         Spec("hermes", "Hermes Agent", "Nous Research: обучение на опыте, навыки", "port.hermes", "/", true) { p ->
-            listOf("/root/.local/bin/hermes", "dashboard", "--no-open", "--skip-build", "--host", "127.0.0.1", "--port", p.toString())
+            listOf("/bin/sh", "-c",
+                "export PATH=/root/.local/bin:/usr/local/bin:/usr/bin:/bin; " +
+                    "exec /root/.local/bin/hermes dashboard --no-open --skip-build --host 127.0.0.1 --port " + p)
         },
         Spec("titan", "TITAN", "Mission Control: команда агентов, память", "port.titan", "/api/health", true) { p ->
-            listOf("/root/.local/titan/bin/titan", "gateway", "--host", "127.0.0.1", "--port", p.toString())
+            // TITAN requires node >= 22; the private Node in HOME is first on PATH.
+            listOf("/bin/sh", "-c",
+                "export PATH=/root/.local/node/bin:/root/.local/titan/bin:/usr/local/bin:/usr/bin:/bin; " +
+                    "exec /root/.local/titan/bin/titan gateway --host 127.0.0.1 --port " + p)
         },
         Spec("titan-cli", "TITAN CLI", "Сжатие токенов: filter, compress, benchmark", "", "", false) { _ ->
-            listOf("/root/.local/titancli/bin/titan", "help")
+            listOf("/bin/sh", "-c",
+                "export PATH=/root/.local/node/bin:/root/.local/titancli/bin:/usr/bin:/bin; " +
+                    "exec /root/.local/titancli/bin/titan help")
         }
     )
 

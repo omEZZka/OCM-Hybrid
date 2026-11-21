@@ -42,7 +42,14 @@ O.on('engine',d=>{
 
 O.on('enginesInstall',d=>{
   if(!d)return;
-  if(d.error){inst={active:false,step:'',pct:0,error:String(d.error)};O.toast(O.tr('Install failed','Ошибка установки'),3000)}
+  if(d.error){
+    inst={active:false,step:'',pct:0,error:String(d.error)};
+    const msg=String(d.error);
+    const short=/ensurepip|python3-venv|venv/.test(msg)
+      ? O.tr('Install failed: the Linux image has no Python venv. Update the app to 3.1.0+ — the installer now handles this automatically.','Ошибка установки: в Linux-образе нет Python venv. Обновите приложение до 3.1.0+ — установщик теперь обходит это сам.')
+      : O.tr('Install failed','Ошибка установки');
+    O.toast(short,4000);
+  }
   else if(d.done){inst={active:false,step:'',pct:100,error:null};O.store.set('enginesInstalled',true);O.toast(O.tr('Engines installed','Движки установлены'),2200)}
   else inst={active:true,step:d.step||'',pct:+d.pct||0,error:null};
   if(O.redrawInterfaces)O.redrawInterfaces();
@@ -132,7 +139,10 @@ O.openInterfaces=()=>{
       const bar=h('i',{style:{width:inst.pct+'%'}});
       body.append(h('div',null,
         h('div',{class:'bar',style:{width:'100%'}},bar),
-        h('p',{class:'note'},inst.step+' — '+inst.pct+'%')));
+        h('p',{class:'note'},inst.step+(inst.pct?' — '+inst.pct+'%':'')),
+        h('div',{class:'note',style:{fontSize:'11px'}},
+          O.tr('Installs a private Node 22 and a Python env in HOME. Takes several minutes on Wi-Fi; the screen can be left open or closed — the install continues.',
+               'Ставит отдельный Node 22 и Python-окружение в HOME. Несколько минут по Wi-Fi; экран можно не держать открытым — установка продолжится.'))));
     }else{
       body.append(h('div',{class:'note',style:{margin:'0 2px 8px',fontSize:'11.5px'}},
         instOk?O.tr('Hermes, TITAN and TITAN CLI are installed.','Hermes, TITAN и TITAN CLI установлены.')

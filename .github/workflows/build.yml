@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 env:
-  VERSION_NAME: "3.1.0"
+  VERSION_NAME: "3.2.0"
 
 jobs:
   build:
@@ -47,11 +47,13 @@ jobs:
         with:
           gradle-version: "8.10.2"
 
-      - name: UI checks (bridge coverage + JS syntax)
+      - name: UI checks (bridge coverage + JS syntax + installer script)
         run: |
           python3 tests/check-bridge.py
           for f in app/src/main/assets/ui/js/*.js; do node --check "$f"; done
           node --check tests/mock.js
+          sh -n app/src/main/assets/engines/install-engines.sh
+          test -s app/src/main/assets/engines/install-engines.sh
 
       - name: Runtime (proot + Linux rootfs + opencode 1.x)
         env:
@@ -94,7 +96,12 @@ jobs:
             echo
             echo "Core: opencode $(grep opencode_core runtime-info.txt | cut -d= -f2) (1.x line) + Linux rootfs proot"
             echo
-            echo "3.1.0 — отдельное приложение OCM Hybrid:"
+            echo "3.2.0 — установка движков, исправленная по реальной ошибке с телефона:"
+            echo "- Hermes: venv создаётся с обновлением apt (python3-venv), фолбэк на virtualenv и установку без venv"
+            echo "- TITAN: в HOME ставится собственный Node.js 22 (в образе 18, а TITAN требует >=22)"
+            echo "- Установщик вынесен в отдельный скрипт с шагами и понятными ошибками вместо обрыва"
+            echo "- Сообщение об ошибке показывает, на каком шаге всё встало"
+            echo 
             echo "- Свой пакет app.ocmhybrid: ставится рядом с OpenCode, не обновляет его и не пересекается с ним"
             echo "- Обновления сохраняют всё: чаты, ключи, настройки и установленные движки"
             echo "- Движки перенесены в HOME: обновление ядра больше не стирает Hermes / TITAN / TITAN CLI"
