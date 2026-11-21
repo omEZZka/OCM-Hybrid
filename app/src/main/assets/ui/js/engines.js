@@ -23,7 +23,9 @@ const INTERFACES=[
 O.engines=()=>{try{return JSON.parse(OC.engines())}catch(e){return{engines:[],current:'opencode',state:{}}}};
 O.engineCurrent=()=>{const e=O.engines();return e.current||O.store.get(KEY,'opencode')};
 const stateOf=id=>{const e=O.engines();return (e.state&&e.state.id===id)?e.state:null};
-const installed=()=>{try{return O.store.get('enginesInstalled',false)}catch(e){return false}};
+// Real presence check from native (files in HOME) OR the in-session success flag: after an
+// update the flag persists but the files are what actually matter.
+const installed=()=>{try{const e=O.engines();if(e&&e.installed)return true}catch(_){};try{return O.store.get('enginesInstalled',false)}catch(e){return false}};
 const titleOf=id=>(INTERFACES.find(x=>x.id===id)||{}).title||id;
 
 // Live install progress, kept outside the sheet so a redraw never loses it.

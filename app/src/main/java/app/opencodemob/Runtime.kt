@@ -179,6 +179,13 @@ object Runtime {
             File(tmp, "root").mkdirs()
             File(tmp, ".stamp").writeText(id)
         } catch (ex: Exception) { throw IOException(friendly(ex, "Не удалось подготовить окружение")) }
+        // Carry over everything the user paid for with time or bandwidth. The rootfs is a
+        // throwaway OS image; HOME (sessions, keys, engines) is the durable part and the new
+        // image must not wipe it. Preserve the user-writable trees that live inside rootfs but
+        // are not part of the image itself.
+        try { carryOver(tmp, tmp.name) } catch (ex: Exception) {
+            android.util.Log.w("OCM", "carry-over skipped: ${ex.message}")
+        }
         // Replace the old rootfs. Its leftover files (from any previous version) can be
         // undeletable (read-only/locked), so: best-effort delete -> rename aside -> swap in.
         val old = rootfs(c)
@@ -191,6 +198,55 @@ object Runtime {
         }
         if (!tmp.renameTo(rootfs(c))) throw IOException("Не удалось переместить Linux-окружение")
         progress(100)
+    }
+
+    /**
+     * Moves the user-writable parts of the OLD rootfs into the freshly extracted one, so a core
+     * update replaces the OS image without destroying what the user installed on top of it.
+     *
+     * Only directories that are not part of the shipped image are carried: extra binaries in
+     * `/usr/local`, packages installed via `apt`, and the contract that the engines live in HOME.
+     * Package-manager state is kept too, so `apt` still sees its database instead of
+     * re-downloading.
+     */
+    private fun carryOver(fresh: File, _tag: String) {
+        val old = File(fresh.parentFile, "rootfs")
+        if (!old.exists() || old.canonicalPath == fresh.canonicalPath) return
+        val movers = listOf(
+            "usr/local" to "usr/local",          // npm -g, pipx, manual binaries (opencode lives here; image wins)
+            "var/lib/dpkg" to "var/lib/dpkg",    // apt database: installed packages stay known
+            "var/lib/apt" to "var/lib/apt",
+            "var/cache/apt" to "var/cache/apt",
+            "etc/apt" to "etc/apt"
+        )
+        for ((from, to) in movers) { // `from` doubles as the special-case key below
+            val src = File(old, from)
+            val dst = File(fresh, to)
+            if (!src.exists()) continue
+            try {
+                if (from == "usr/local") {
+                    // The new image ships its own opencode core in /usr/local/bin: keep the new
+                    // binary, restore everything else the user added.
+                    src.listFiles()?.forEach { entry ->
+                        if (entry.name == "bin") {
+                            entry.listFiles()?.forEach binLoop@{ bin ->
+                                // The image owns these launchers; everything else was added by the user.
+                                if (bin.name in setOf("opencode", "hermes", "titan", "titan-filter")) return@binLoop
+                                val t = File(dst, "bin/" + bin.name)
+                                if (!t.exists()) { t.parentFile?.mkdirs(); bin.copyRecursively(t, true) }
+                            }
+                        } else {
+                            val t = File(dst, entry.name)
+                            if (!t.exists()) { t.parentFile?.mkdirs(); entry.copyRecursively(t, true) }
+                        }
+                    }
+                } else {
+                    if (dst.exists()) rmrf(dst)
+                    dst.parentFile?.mkdirs()
+                    if (!src.renameTo(dst)) src.copyRecursively(dst, true)
+                }
+            } catch (_: Exception) {}
+        }
     }
 
     private fun extract(root: File, tar: TarArchiveInputStream, e: TarArchiveEntry) {
@@ -320,7 +376,7 @@ object Runtime {
             put("PROOT_TMP_DIR", ptmp.path)
             put("HOME", "/root"); put("USER", "root"); put("SHELL", "/bin/bash")
             put("LANG", "C.UTF-8"); put("TERM", "dumb"); put("TMPDIR", "/tmp")
-            put("PATH", "/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
+            put("PATH", "/root/.local/bin:/root/.local/titan/bin:/root/.local/titancli/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
             put("DISABLE_TELEMETRY", "1"); put("DO_NOT_TRACK", "1")
             put("HERMES_SKIP_BUILD", "1")
             put("NODE_ENV", "production")
@@ -341,7 +397,7 @@ object Runtime {
             put("PROOT_TMP_DIR", ptmp.path)
             put("HOME", "/root"); put("USER", "root"); put("SHELL", "/bin/bash")
             put("LANG", "C.UTF-8"); put("TERM", "dumb"); put("TMPDIR", "/tmp")
-            put("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
+            put("PATH", "/root/.local/bin:/root/.local/titan/bin:/root/.local/titancli/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
             put("OPENCODE_DISABLE_AUTOUPDATE", "1")
         }
         return pb.start()
@@ -605,7 +661,7 @@ object Runtime {
 
             // Global System Prompt (AGENTS.md)
             val promptText = """
-# OpenCode Mobile Environment & Instructions (v2.0.1)
+# OCM Hybrid Environment & Instructions (v3.0)
 
 You are running inside **OpenCode Mobile** directly on native Android (ARM64 / aarch64 architecture).
 You have full access to a complete Linux userspace environment, terminal tools, and native Android integrations.
@@ -655,9 +711,9 @@ For example:
             val readme = File(home, "README.md")
             if (readme.createNewFile()) {
                 readme.writeText("""
-# 🚀 OpenCode Mobile v2.0.1
+# 🚀 OCM Hybrid v3.0
 
-Добро пожаловать в **OpenCode Mobile** — полноценную среду разработки и ИИ-ассистента на Android!
+Добро пожаловать в **OCM Hybrid** — четыре агентских движка в одном приложении на Android!
 
 ### 🌟 Возможности
 - 🤖 **Топовые ИИ-модели**: Бесплатные и платные модели (Claude, GPT-4o, DeepSeek, Qwen).
@@ -705,7 +761,7 @@ For example:
             if (noSeccomp) put("PROOT_NO_SECCOMP", "1")
             put("HOME", "/root"); put("USER", "root"); put("SHELL", "/bin/bash")
             put("LANG", "C.UTF-8"); put("TERM", "xterm-256color"); put("TMPDIR", "/tmp")
-            put("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
+            put("PATH", "/root/.local/bin:/root/.local/titan/bin:/root/.local/titancli/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
             put("OPENCODE_SERVER_USERNAME", "opencode")
             put("OPENCODE_SERVER_PASSWORD", password)
             put("OPENCODE_DISABLE_AUTOUPDATE", "1") // stay on 1.x: no `upgrade --major` behind our back
@@ -723,6 +779,18 @@ For example:
      * Hermes Agent  -> pipx-style venv in /opt/hermes, launcher /usr/local/bin/hermes
      * TITAN         -> npm global package `titan-agent`, launcher /usr/local/bin/titan
      * TITAN CLI     -> npm global package `titan-agent-cli`, launcher /usr/local/bin/titan-filter
+     */
+    /**
+     * Installs the external engines **into the user's HOME** (`files/users/<uid>/home`), never into
+     * the rootfs. That directory survives every core update and every rootfs re-install, so the
+     * expensive Python/Node installs are downloaded once and never lost when the app updates.
+     *
+     *   Hermes Agent -> /root/.local/hermes/venv, launcher /root/.local/bin/hermes
+     *   TITAN        -> npm prefix /root/.local/titan      (bin/titan)
+     *   TITAN CLI    -> npm prefix /root/.local/titancli   (bin/titan-filter)
+     *
+     * The two npm packages both ship a binary called `titan`, so they get separate prefixes;
+     * a shared one silently clobbered TITAN with the token filter.
      */
     @Synchronized
     fun installEngines(c: Context, uid: String, progress: (String, Int) -> Unit) {
@@ -743,7 +811,7 @@ For example:
         }
 
         progress("Подготовка окружения", 2)
-        run(listOf("/bin/sh", "-lc", "mkdir -p /opt/hermes /root/.local/bin && ln -sf /root/.local/bin/titan /usr/local/bin/titan 2>/dev/null || true"))
+        run(listOf("/bin/sh", "-lc", "mkdir -p /root/.local/bin /root/.local/titan /root/.local/titancli /root/.local/hermes"))
 
         progress("Python (Hermes Agent)", 8)
         run(listOf("/bin/sh", "-lc",
@@ -751,11 +819,14 @@ For example:
 
         progress("Установка Hermes Agent", 20)
         val (hcode, hlog) = run(listOf("/bin/sh", "-lc",
-            "set -e; python3 -m venv /opt/hermes/venv 2>/dev/null || true; " +
-                "/opt/hermes/venv/bin/pip install --no-cache-dir --upgrade pip >/dev/null; " +
-                "/opt/hermes/venv/bin/pip install --no-cache-dir 'hermes-agent' " +
-                "&& printf '#!/bin/sh\nexec /opt/hermes/venv/bin/hermes \"$@\"\n' > /usr/local/bin/hermes " +
-                "&& chmod +x /usr/local/bin/hermes"))
+            "set -e; " +
+                // A venv created against a different base python after a core update is stale:
+                // rebuild it instead of failing with a cryptic interpreter error.
+                "if [ -x /root/.local/hermes/venv/bin/python3 ] && /root/.local/hermes/venv/bin/python3 -c 'import sys' 2>/dev/null; then :; else rm -rf /root/.local/hermes/venv; python3 -m venv /root/.local/hermes/venv; fi; " +
+                "/root/.local/hermes/venv/bin/pip install --no-cache-dir --upgrade pip >/dev/null; " +
+                "/root/.local/hermes/venv/bin/pip install --no-cache-dir 'hermes-agent' " +
+                "&& printf '#!/bin/sh\nexec /root/.local/hermes/venv/bin/hermes \"$@\"\n' > /root/.local/bin/hermes " +
+                "&& chmod +x /root/.local/bin/hermes"))
         if (hcode != 0) throw IOException("Hermes Agent не установился:\n" + hlog.takeLast(1500))
 
         progress("Node.js (TITAN)", 55)
@@ -764,12 +835,12 @@ For example:
 
         progress("Установка TITAN", 65)
         val (tcode, tlog) = run(listOf("/bin/sh", "-lc",
-            "set -e; npm install -g --no-audit --no-fund titan-agent@latest"))
+            "set -e; npm install -g --prefix /root/.local/titan --no-audit --no-fund titan-agent@latest"))
         if (tcode != 0) throw IOException("TITAN не установился:\n" + tlog.takeLast(1500))
 
         progress("Установка TITAN CLI", 85)
         val (ccode, clog) = run(listOf("/bin/sh", "-lc",
-            "set -e; npm install -g --no-audit --no-fund titan-agent-cli@latest"))
+            "set -e; npm install -g --prefix /root/.local/titancli --no-audit --no-fund titan-agent-cli@latest"))
         if (ccode != 0) throw IOException("TITAN CLI не установился:\n" + clog.takeLast(1500))
 
         progress("Готово", 100)

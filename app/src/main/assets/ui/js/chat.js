@@ -1318,7 +1318,7 @@ function exportSessionMd(){
   if(!S.sid)return;
   const list=O.visibleMsgs(S.sid);
   if(!list.length)return O.toast('Сессия пуста');
-  let out='# OpenCode Mobile — '+(S.sessions.find(x=>x.id===S.sid)?.title||'Сессия')+'\n\n';
+  let out='# OCM Hybrid — '+(S.sessions.find(x=>x.id===S.sid)?.title||'Сессия')+'\n\n';
   list.forEach(m=>{
     out+=(m.info.role==='user'?'### Пользователь':'### Ассистент')+'\n\n';
     m.parts.forEach(p=>{

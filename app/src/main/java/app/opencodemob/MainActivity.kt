@@ -1611,7 +1611,7 @@ class MainActivity : ComponentActivity() {
                 try {
                     val exec = androidx.core.content.ContextCompat.getMainExecutor(this@MainActivity)
                     val prompt = android.hardware.biometrics.BiometricPrompt.Builder(this@MainActivity)
-                        .setTitle(title.ifEmpty { "OpenCode Mobile" })
+                        .setTitle(title.ifEmpty { "OCM Hybrid" })
                         .setAllowedAuthenticators(android.hardware.biometrics.BiometricManager.Authenticators.BIOMETRIC_STRONG or
                             android.hardware.biometrics.BiometricManager.Authenticators.DEVICE_CREDENTIAL)
                         .build()
@@ -2203,7 +2203,7 @@ class MainActivity : ComponentActivity() {
 
         // --- clipboard / share / links ---
         @JavascriptInterface fun copy(text: String) {
-            runOnUiThread { (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("OpenCode", text)) }
+            runOnUiThread { (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("OCM Hybrid", text)) }
         }
 
         @JavascriptInterface fun pasteText(): String = try {

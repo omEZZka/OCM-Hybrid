@@ -13,7 +13,7 @@ function build(){
   T.tokensVal=h('span',{class:'top-tokens-val'},'0 tok');
   T.tokens=h('button',{class:'top-tokens-btn',style:{display:'none'},title:O.tr('Session Tokens / Context','Токены сессии / Контекст'),onclick:()=>O.openTokensModal()},h('span',{class:'tok-bolt',html:BOLT_SVG}),T.tokensVal);
   const topLeft=h('div',{class:'top-left-box'},T.menu,T.tokens);
-  T.title=h('button',{class:'top-title',title:O.tr('Sessions','Сессии'),onclick:()=>O.openSessions()},h('span',{class:'top-title-txt'},O.tr('OpenCode','OpenCode')),h('span',{class:'top-title-dot hide'}));
+  T.title=h('button',{class:'top-title',title:O.tr('Sessions','Сессии'),onclick:()=>O.openSessions()},h('span',{class:'top-title-txt'},O.tr('OCM Hybrid','OCM Hybrid')),h('span',{class:'top-title-dot hide'}));
   O.longPress(T.title,()=>{
     const s=S.sid&&S.sessions.find(x=>x.id===S.sid);if(!s)return;
     O.actions(O.sessionTitle(s),[
@@ -277,7 +277,7 @@ function updateTopTitle(){
   const sp=T.title.querySelector('.top-title-txt');
   if(!sp)return;
   const s=S.sid&&S.sessions.find(x=>x.id===S.sid);
-  const t=s?O.sessionTitle(s):O.tr('OpenCode','OpenCode');
+  const t=s?O.sessionTitle(s):O.tr('OCM Hybrid','OCM Hybrid');
   sp.textContent=t;
   T.title.classList.toggle('empty',!s);
   const dot=T.title.querySelector('.top-title-dot');

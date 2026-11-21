@@ -3,8 +3,8 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-val appVersionName = (findProperty("appVersionName") as String?) ?: "3.0.0"
-val appVersionCode = ((findProperty("appVersionCode") as String?) ?: "3000").toInt()
+val appVersionName = (findProperty("appVersionName") as String?) ?: "3.1.0"
+val appVersionCode = ((findProperty("appVersionCode") as String?) ?: "3100").toInt()
 val ksPass = System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotEmpty() } ?: "opencodemob"
 
 android {
@@ -12,13 +12,13 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "app.opencodemob"
+        applicationId = "app.ocmhybrid"
         minSdk = 30
         targetSdk = 34
         versionCode = appVersionCode
         versionName = appVersionName
         ndk { abiFilters.add("arm64-v8a") }
-        buildConfigField("String", "GITHUB_REPO", "\"omEZZka/OCM-Unified\"")
+        buildConfigField("String", "GITHUB_REPO", "\"omEZZka/OCM-Hybrid\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${System.getenv("GOOGLE_WEB_CLIENT_ID") ?: ""}\"")
     }
 

@@ -116,7 +116,7 @@
             android:name=".ActionReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="app.opencodemob.NOTIFICATION_ACTION" />
+                <action android:name="app.ocmhybrid.NOTIFICATION_ACTION" />
             </intent-filter>
         </receiver>
 

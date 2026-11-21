@@ -282,11 +282,11 @@ O.openSettings=()=>{
     O.listRow('shield',O.tr('App lock','Блокировка приложения'),O.tr('Biometric unlock on launch and after background','Биометрия при запуске и после фона'),O.icon('chevR'),()=>O.openAppLockSettings()),
     O.listRow('branch',O.tr('Git timeline','История Git'),O.tr('Commits with diffs','Коммиты с diff'),O.icon('chevR'),()=>O.openGitTimeline()),
     O.listRow('shield',O.tr('Encrypted backup','Шифрованный бэкап'),O.tr('Profile, config and sessions to /sdcard/Download','Профиль, конфиг и сессии в /sdcard/Download'),O.icon('chevR'),()=>openBackup()),
-    O.listRow('down',O.tr('Updates','Обновления'),O.tr('OpenCode Mobile & Core Runtime','Приложение и ядро OpenCode (1.x)'),O.icon('chevR'),()=>openUpdates()),
+    O.listRow('down',O.tr('Updates','Обновления'),O.tr('App, core runtime and installed engines','Приложение, ядро и установленные движки'),O.icon('chevR'),()=>openUpdates()),
     O.listRow('code',O.tr('Export / Import settings','Экспорт / импорт настроек'),O.tr('Models, agents, themes, fallbacks as JSON','Модели, агенты, темы, резервные модели в JSON'),O.icon('chevR'),()=>openSettingsTransfer()),
     O.listRow('shield',O.tr('Permissions','Разрешения'),O.tr('Storage, notifications, background execution','Файлы, уведомления, фон'),O.icon('chevR'),()=>openPerms()),
     O.listRow('bat',O.tr('Logs & Diagnostics','Совместимость и логи'),O.tr('Safe mode, core runtime restart','Безопасный режим, перезапуск сервера'),O.icon('chevR'),()=>openCompat()),
-    O.listRow('info',O.tr('About OpenCode Mobile','О приложении'),'',O.icon('chevR'),()=>openAbout()),
+    O.listRow('info',O.tr('About OCM Hybrid','О приложении'),'',O.icon('chevR'),()=>openAbout()),
     O.listRow('bot',O.tr('Telegram bot','Telegram-бот'),O.tr('Run tasks from Telegram, answers back','Задачи из Telegram, ответы обратно'),O.icon('chevR'),()=>O.openTelegramBot()),
     O.listRow('tg',O.tr('Community & Telegram','Сообщество Telegram'),'t.me/OpenCodeMob',O.icon('chevR'),()=>O.openUrl('https://t.me/OpenCodeMob'))
   );
@@ -540,7 +540,7 @@ async function tgTick(){
           continue;
         }
         const text=String(msg.text).trim();
-        if(text==='/start'){await tgSend(chatId,O.tr('OpenCode Mobile bot. Send any task; /status shows the server state.','Бот OpenCode Mobile. Отправьте задачу; /status — состояние сервера.'));continue}
+        if(text==='/start'){await tgSend(chatId,O.tr('OCM Hybrid bot. Send any task; /status shows the server state.','Бот OCM Hybrid. Отправьте задачу; /status — состояние сервера.'));continue}
         if(text==='/status'){await tgSend(chatId,(S.up?O.tr('Server: online','Сервер: онлайн'):O.tr('Server: offline','Сервер: офлайн'))+' · '+(S.model?S.model.modelID:'—'));continue}
         if(!S.model){await tgSend(chatId,O.tr('No model selected in the app','В приложении не выбрана модель'));continue}
         tgRunTask(chatId,text); // fire and forget: several chats can queue tasks
@@ -711,16 +711,22 @@ function openUpdates(){const st=O.native.state();const bar=h('i');const info=h('
   const app=h('div'),core=h('div');
   const row=(t,sb,btn)=>h('div',{class:'li'},O.icon('down'),h('div',{class:'t'},h('b',null,t),h('span',null,sb)),btn||null);
   const draw=u=>{app.textContent='';core.textContent='';
-    app.append(row('Приложение OpenCode '+st.version,u&&u.app?'Новая версия '+u.app.name:'Актуальная версия',u&&u.app?h('button',{class:'btn pri sm',onclick:()=>OC.applyAppUpdate()},'Установить'):null));
+    app.append(row('Приложение OCM Hybrid '+st.version,u&&u.app?'Новая версия '+u.app.name:'Актуальная версия',u&&u.app?h('button',{class:'btn pri sm',onclick:()=>OC.applyAppUpdate()},'Установить'):null));
     core.append(row('Ядро OpenCode '+(st.core||''),u&&u.core?'Новый релиз '+u.core:'ветка 1.x',u&&u.core?h('button',{class:'btn pri sm',onclick:()=>OC.applyCoreUpdate()},'Обновить'):null))};
   draw(null);
-  const s=sub('Обновления',h('div',null,app,core,h('button',{class:'btn wide',onclick:()=>{info.textContent='Проверка...';OC.checkUpdates()}},O.icon('refresh'),'Проверить обновления'),info,h('div',{class:'bar',style:{marginTop:'8px'}},bar),
-    h('div',{class:'note',style:{marginTop:'12px'}},'Обновления ядра идут только по ветке 1.x и применяются без переустановки приложения.')),{onClose:()=>{updUI=null}});
+  const keeps=O.tr('App updates keep everything: chats and keys live in the app data, Hermes / TITAN / TITAN CLI live in HOME. Core and app updates never wipe them. Engine updates are re-installed on top of the existing ones.',
+                   'Обновления сохраняют всё: чаты и ключи лежат в данных приложения, Hermes / TITAN / TITAN CLI — в HOME пользователя. Обновление ядра и приложения их не стирает. Движки обновляются поверх уже установленных.');
+  const s=sub(O.tr('Updates','Обновления'),h('div',null,app,core,
+    h('button',{class:'btn wide',onclick:()=>{info.textContent='Проверка...';OC.checkUpdates()}},O.icon('refresh'),'Проверить обновления'),
+    info,h('div',{class:'bar',style:{marginTop:'8px'}},bar),
+    h('div',{class:'grp'},'Движки'),
+    h('button',{class:'btn wide',onclick:()=>{s.close();setTimeout(()=>O.openInterfaces&&O.openInterfaces(),200)}},O.icon('swap'),O.tr('Manage engines','Управление движками')),
+    h('div',{class:'note',style:{marginTop:'12px'}},keeps)),{onClose:()=>{updUI=null}});
   updUI={draw,bar,info,s}}
 O.on('update',d=>{if(!updUI)return;
   if(d.error){updUI.info.textContent=d.error;updUI.bar.style.width='0'}
   else if(d.pct!=null){updUI.bar.style.width=d.pct+'%';updUI.info.textContent=(d.what==='core'?'Загрузка ядра ':'Загрузка приложения ')+d.pct+'%'}
-  else if(d.coreDone){updUI.bar.style.width='0';updUI.info.textContent='Ядро обновлено до '+d.coreDone+'. Перезапуск сервера...'}
+  else if(d.coreDone){updUI.bar.style.width='0';updUI.info.textContent='Ядро обновлено до '+d.coreDone+'. Данные и движки сохранены, перезапуск сервера...'}
   else{updUI.draw(d);updUI.info.textContent=(d.app||d.core)?'Доступны обновления':'Всё актуально'}});
 
 // ---- permissions ----
@@ -826,8 +832,8 @@ O.runDiagnostics=async()=>{
 };
 
 function openAbout(){const st=O.native.state();
-  sub('О приложении',h('div',null,h('div',{class:'center',style:{minHeight:0,padding:'16px 0'}},O.logo(40),h('b',{style:{fontSize:'20px'}},'OpenCode'),h('div',{class:'mut'},'Версия '+st.version),h('div',{class:'mut s'},'Ядро '+(st.core||'неизвестно')+' (1.x)')),
-    h('div',{class:'note'},'OpenCode Mobile упаковывает CLI OpenCode 1.x (лицензия MIT) в Android-приложение. Оно создано не командой OpenCode и никак с ней не связано.'),
+  sub('О приложении',h('div',null,h('div',{class:'center',style:{minHeight:0,padding:'16px 0'}},O.logo(40),h('b',{style:{fontSize:'20px'}},'OCM Hybrid'),h('div',{class:'mut'},'Версия '+st.version),h('div',{class:'mut s'},'Движков доступно: 4 · активно: '+(O.engineCurrent?O.engineCurrent():'opencode'))),
+    h('div',{class:'note'},'OCM Hybrid — самостоятельное приложение: отдельный пакет app.ocmhybrid, свои данные, не пересекается с оригинальным OpenCode и не обновляется поверх него. Внутри — четыре агентских движка: OpenCode (совместимое ядро, MIT), Hermes Agent, TITAN и TITAN CLI. Hermes и TITAN — независимые проекты своих авторов, лицензии MIT.'),
     h('div',{class:'note',style:{marginTop:'10px'}},'OpenCode как CLI-агент есть и у Warp — документация: docs.warp.dev/agents/cli-agents/opencode.'),
     h('button',{class:'btn wide',style:{marginTop:'12px'},onclick:()=>O.openUrl('https://docs.warp.dev/agents/cli-agents/opencode/')},O.icon('globe'),'OpenCode CLI-агент (Warp)'),
     h('button',{class:'btn wide',style:{marginTop:'8px'},onclick:()=>O.openUrl('https://t.me/OpenCodeMob')},O.icon('tg'),'t.me/OpenCodeMob')))}
@@ -1119,9 +1125,9 @@ O.getActiveJailbreak=()=>{
   return jbs[0]||null;
 };
 
-const BASE_SYSTEM_INSTRUCTIONS = `# OpenCode Mobile Environment & Instructions (v2.0.1)
+const BASE_SYSTEM_INSTRUCTIONS = `# OCM Hybrid Environment & Instructions (v2.0.1)
 
-You are running inside **OpenCode Mobile** directly on native Android (ARM64 / aarch64 architecture).
+You are running inside **OCM Hybrid** directly on native Android (ARM64 / aarch64 architecture).
 You have full access to a complete Linux userspace environment, terminal tools, and native Android integrations.
 
 ## 1. Environment & Architecture
@@ -1139,7 +1145,7 @@ Whenever the user asks you to open, launch, or switch to an app:
    \`<button data-action="open_app" data-target="<app_name>">Открыть <app_name></button>\`
 
 ## 3. Core Skill: In-App Web Project Preview
-You have the built-in skill to preview web projects directly inside OpenCode Mobile:
+You have the built-in skill to preview web projects directly inside OCM Hybrid:
 - To launch the in-app preview from shell, execute: \`openpreview <path>\`
 - Or include an interactive artifact button in your response:
   \`<button data-action="preview" data-path="index.html">Открыть сайт</button>\`
@@ -1224,7 +1230,7 @@ O.updateReadmeForModel = (modelID) => {
         if(a>=0||b>=0){
           if(a<0||b<a||old.lastIndexOf(rulesStart)!==a||old.lastIndexOf(rulesEnd)!==b)continue;
           next=old.slice(0,a)+block+old.slice(b+rulesEnd.length);
-        }else if(old.startsWith('# OpenCode Mobile Environment & Instructions (v2.0.1)')||old.startsWith('# OpenCode System Directives & Instructions (Active: ')){
+        }else if(old.startsWith('# OCM Hybrid Environment & Instructions')||old.startsWith('# OpenCode Mobile Environment & Instructions')||old.startsWith('# OpenCode System Directives & Instructions (Active: ')){
           // Legacy app-generated file: it is entirely ours. Replace it, but keep any hints
           // (media/map) that were appended after the base instructions.
           const bi=old.indexOf(BASE_SYSTEM_INSTRUCTIONS);

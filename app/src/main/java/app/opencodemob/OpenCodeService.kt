@@ -79,7 +79,7 @@ class OpenCodeService : Service() {
                         val lf = File(filesDir, "server.log")
                         if (lf.exists()) lf.readLines().takeLast(8).joinToString("\n") else ""
                     } catch (_: Exception) { "" }
-                    ServerState.error = "OpenCode завершился с ошибкой ($code)" + (if (logTail.isNotEmpty()) ":\n$logTail" else "")
+                    ServerState.error = "Ядро завершилось с ошибкой ($code)" + (if (logTail.isNotEmpty()) ":\n$logTail" else "")
                     // Auto-heal config if startup crashed
                     Runtime.sanitizeConfig(this, uid, forceReset = (attempt >= 1))
                 }
@@ -92,7 +92,7 @@ class OpenCodeService : Service() {
                 val lf = File(filesDir, "server.log")
                 if (lf.exists()) lf.readLines().takeLast(8).joinToString("\n") else ""
             } catch (_: Exception) { "" }
-            ServerState.error = "Не удалось запустить сервер OpenCode" + (if (logTail.isNotEmpty()) ":\n$logTail" else "")
+            ServerState.error = "Не удалось запустить сервер" + (if (logTail.isNotEmpty()) ":\n$logTail" else "")
         }
         // Giving up must not leave a wake lock behind for days: that drained the battery after every
         // failed start. stopSelf() also suppresses the START_STICKY restart, which would otherwise
@@ -249,7 +249,7 @@ class OpenCodeService : Service() {
                         sawAnswer.remove(sid)
                     }
                     val title = props.optString("title").ifEmpty { "Задача выполняется" }
-                    WidgetUpdater.set(this, title, if (sid.isNotEmpty()) "Сессия ${sid.take(8)}" else "OpenCode работает", true)
+                    WidgetUpdater.set(this, title, if (sid.isNotEmpty()) "Сессия ${sid.take(8)}" else "OCM Hybrid работает", true)
                     // The UI publishes MM progress in Prefs; mirror it into a determinate notification.
                     val mmDone = Prefs.get(this, "overlay_jobs", "").split(',').count { it == "done" }
                     val mmAll = Prefs.get(this, "overlay_jobs", "").split(',').count { it.isNotBlank() }
@@ -265,7 +265,7 @@ class OpenCodeService : Service() {
                 WidgetUpdater.idle(this)
             }
             type == "question.asked" || (type.startsWith("permission.") && (type.endsWith("updated") || type.endsWith("asked"))) ->
-                Notifier.event(this, Notifier.ACTION, "Требуется действие", "OpenCode ждёт вашего ответа или подтверждения.", sessionId = sid, sessionTitle = sessionTitle(sid), permissionId = permId, questionId = qId)
+                Notifier.event(this, Notifier.ACTION, "Требуется действие", "Агент ждёт вашего ответа или подтверждения.", sessionId = sid, sessionTitle = sessionTitle(sid), permissionId = permId, questionId = qId)
             type == "session.error" -> {
                 val err = props.optJSONObject("error")
                 val errJson = err?.toString() ?: ""
@@ -306,7 +306,7 @@ class OpenCodeService : Service() {
         if (now - last < 8000) return
         if (lastDone.size > 200) lastDone.clear()
         lastDone[sid] = now
-        Notifier.event(this, Notifier.DONE, "Задача завершена", "OpenCode завершил работу.", sessionId = sid, sessionTitle = sessionTitle(sid))
+        Notifier.event(this, Notifier.DONE, "Задача завершена", "Агент завершил работу.", sessionId = sid, sessionTitle = sessionTitle(sid))
     }
 
     override fun onDestroy() {

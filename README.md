@@ -1,27 +1,27 @@
 <p align="center">
-  <img src="docs/logo.svg" alt="OpenCode logo" width="96">
+  <img src="docs/logo.svg" alt="OCM Hybrid logo" width="96">
 </p>
-<p align="center">Настоящий OpenCode на Android-телефоне. Без root и без отдельного компьютера.</p>
+<p align="center">Четыре агентских движка в одном Android-приложении. Без root и без компьютера.</p>
 <p align="center">
-  <a href="https://github.com/lovereplit-bit/OCM/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/lovereplit-bit/OCM?style=flat-square" /></a>
-  <a href="https://github.com/lovereplit-bit/OCM/actions/workflows/build.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/lovereplit-bit/OCM/build.yml?style=flat-square&branch=main" /></a>
-  <a href="https://t.me/OpenCodeMob"><img alt="Telegram" src="https://img.shields.io/badge/telegram-OpenCodeMob-26A5E4?style=flat-square&logo=telegram&logoColor=white" /></a>
+  <a href="https://github.com/omEZZka/OCM-Hybrid/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/omEZZka/OCM-Hybrid?style=flat-square" /></a>
+  <a href="https://github.com/omEZZka/OCM-Hybrid/actions/workflows/build.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/omEZZka/OCM-Hybrid/build.yml?style=flat-square&branch=main" /></a>
 </p>
 
 ---
 
 ### Установка
 
-Скачайте `OpenCode-<версия>-<сборка>.apk` со страницы
-[Releases](https://github.com/lovereplit-bit/OCM/releases/latest) и установите.
+Скачайте `OCMHybrid-<версия>-<сборка>.apk` со страницы
+[Releases](https://github.com/omEZZka/OCM-Hybrid/releases/latest) и установите.
 
 - Android 11 или новее, 64-битный ARM (arm64-v8a)
 - Первый запуск распаковывает Linux-окружение (пару минут, один раз)
+- Отдельное приложение: `app.ocmhybrid`, ставится рядом с OpenCode и не обновляется поверх него
+- Обновления сохраняют данные: чаты, ключи, настройки и установленные движки
 - Работает сразу: первый же запуск открывает чат, бесплатные модели отвечают без входа
 - Обновления приходят по воздуху: **Настройки → Обновления**
 
-Текущая версия приложения: **1.0.8** (откат на рабочую линейку с ядром OpenCode **1.x**).
-Ветка 1.x закреплена сознательно: в ней чат с ИИ работает из коробки.
+Текущая версия приложения: **3.0.0**.
 
 ### Что нового: четыре интерфейса в одном приложении
 
@@ -34,6 +34,20 @@
 | **Hermes Agent** ([NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)) | самообучающийся агент: навыки из опыта, память, поиск по прошлым сессиям | `pip install hermes-agent`, панель на loopback |
 | **TITAN** ([Djtony707/TITAN](https://github.com/Djtony707/TITAN)) | «компания» агентов: общая память, автономия, Mission Control | `npm i -g titan-agent`, панель на loopback |
 | **TITAN CLI** ([Raxyl00/titan-agent-cli](https://github.com/Raxyl00/titan-agent-cli)) | сжатие токенов: `filter`, `compress`, `benchmark` | работает прямо в терминале приложения |
+
+### Обновления без потери данных
+
+Приложение, ядро и движки обновляются независимо, и ни одно обновление не стирает данные:
+
+| Что обновляется | Где живут данные | Что происходит |
+|---|---|---|
+| **Приложение** (APK) | данные приложения (`files/`) | APK ставится поверх: чаты, ключи, настройки, HOME и движки остаются |
+| **Ядро** (Linux-образ) | HOME пользователя + `/usr/local` | образ заменяется, а HOME, установленные пакеты и `apt`-база переносятся в новый |
+| **Движки** | `HOME/.local/{hermes,titan,titancli}` | ставятся/обновляются поверх уже установленных, без полного сброса |
+
+Движки специально живут в HOME, а не в образе: HOME — единственная часть, которую обновление
+ядра не трогает. Пакеты npm разнесены по отдельным префиксам (`titan` и `titan-client` оба
+называют свой бинарник `titan` — общий префикс затирал один другим).
 
 Как это устроено:
 

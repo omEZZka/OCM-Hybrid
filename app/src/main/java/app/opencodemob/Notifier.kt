@@ -43,7 +43,7 @@ object Notifier {
     fun runtime(c: Context, text: String): Notification =
         NotificationCompat.Builder(c, "runtime")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("OpenCode")
+            .setContentTitle("OCM Hybrid")
             .setContentText(text)
             .setOngoing(true)
             .setContentIntent(open(c))

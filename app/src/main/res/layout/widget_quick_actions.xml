@@ -22,7 +22,7 @@
         <ImageView
             android:layout_width="20dp"
             android:layout_height="20dp"
-            android:contentDescription="OpenCode AI"
+            android:contentDescription="OCM Hybrid"
             android:src="@drawable/ic_widget_sparkle" />
 
         <TextView
@@ -34,7 +34,7 @@
             android:ellipsize="end"
             android:fontFamily="sans-serif"
             android:maxLines="1"
-            android:text="Сообщение в OpenCode…"
+            android:text="Сообщение в OCM Hybrid…"
             android:textColor="#A1A1AA"
             android:textSize="14sp" />
 

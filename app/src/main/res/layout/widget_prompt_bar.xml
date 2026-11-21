@@ -26,7 +26,7 @@
         android:ellipsize="end"
         android:fontFamily="sans-serif"
         android:maxLines="1"
-        android:text="Спросить OpenCode AI…"
+        android:text="Спросить OCM Hybrid…"
         android:textColor="#A1A1AA"
         android:textSize="14sp" />
 

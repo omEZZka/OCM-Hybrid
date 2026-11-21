@@ -116,7 +116,7 @@ const engCat = [
   { id: 'titan-cli', title: 'TITAN CLI', subtitle: 'token filtering', web: false, port: 0 },
 ];
 window.__eng = engState;
-OC.engines = () => JSON.stringify({ engines: engCat, current: engCurrent, state: engState });
+OC.engines = () => JSON.stringify({ engines: engCat, current: engCurrent, state: engState, installed: window.__engInstalled !== false });
 OC.engineSelect = id => {
   engCurrent = id;
   const e = engCat.find(x => x.id === id);

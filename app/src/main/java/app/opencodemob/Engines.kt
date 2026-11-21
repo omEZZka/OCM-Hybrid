@@ -13,9 +13,9 @@ import java.net.URL
  * The four agent runtimes this app can drive.
  *
  * `opencode` is the built-in one: it ships inside the APK and its UI is the bundled
- * `assets/ui` page. The other three are installed into the same proot rootfs and each
- * serves its own web dashboard on loopback, which [EngineActivity] hosts in a sandboxed
- * WebView. `titan-cli` has no server — it is a terminal tool, so picking it switches to
+ * `assets/ui` page. The other three are installed into the user's HOME inside the proot
+ * environment (so they survive app and core updates) and each serves its own web dashboard
+ * on loopback, which [EngineActivity] hosts in a sandboxed WebView. `titan-cli` has no server — it is a terminal tool, so picking it switches to
  * the terminal tab instead of opening a web view.
  */
 object Engines {
@@ -32,13 +32,13 @@ object Engines {
     val all = listOf(
         Spec("opencode", "OpenCode", "Встроенный агент: чат, файлы, терминал", "", "", false) { emptyList() },
         Spec("hermes", "Hermes Agent", "Nous Research: обучение на опыте, навыки", "port.hermes", "/", true) { p ->
-            listOf("hermes", "dashboard", "--no-open", "--skip-build", "--host", "127.0.0.1", "--port", p.toString())
+            listOf("/root/.local/bin/hermes", "dashboard", "--no-open", "--skip-build", "--host", "127.0.0.1", "--port", p.toString())
         },
         Spec("titan", "TITAN", "Mission Control: команда агентов, память", "port.titan", "/api/health", true) { p ->
-            listOf("titan", "gateway", "--host", "127.0.0.1", "--port", p.toString())
+            listOf("/root/.local/titan/bin/titan", "gateway", "--host", "127.0.0.1", "--port", p.toString())
         },
         Spec("titan-cli", "TITAN CLI", "Сжатие токенов: filter, compress, benchmark", "", "", false) { _ ->
-            listOf("titan", "help")
+            listOf("/root/.local/titancli/bin/titan", "help")
         }
     )
 
@@ -111,6 +111,21 @@ object Engines {
         if (f.exists()) f.readLines().takeLast(lines).joinToString("\n") else ""
     } catch (_: Exception) { "" }
 
+    /**
+     * True when every external engine still has its files. Engines live in HOME, which survives
+     * app and core updates, but a user can wipe app data — so the UI asks before claiming they
+     * are installed.
+     */
+    fun installed(c: Context): Boolean {
+        val home = Runtime.home(c, Prefs.get(c, "uid"))
+        val probes = listOf(
+            File(home, ".local/bin/hermes"),
+            File(home, ".local/titan/bin/titan"),
+            File(home, ".local/titancli/bin/titan")
+        )
+        return probes.all { it.exists() }
+    }
+
     /** The catalog plus live state, consumed by the UI. */
     fun describe(c: Context): String {
         val arr = JSONArray()
@@ -126,6 +141,7 @@ object Engines {
             .put("engines", arr)
             .put("current", current(c))
             .put("state", EngineState.json())
+            .put("installed", installed(c))
             .toString()
     }
 }

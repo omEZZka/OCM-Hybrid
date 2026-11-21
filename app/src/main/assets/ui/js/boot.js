@@ -2,7 +2,7 @@
 const O=window.OCM,h=O.h;let el=null,entered=false,permsRender=null,waitT=null;
 const screen=(...k)=>{if(!el){el=h('div',{id:'boot'});document.body.append(el)}el.textContent='';el.append(h('div',{class:'center'},...k.flat()));return el};
 O.bootHide=()=>{if(el){el.remove();el=null}};
-const logo=()=>[O.logo(44),h('b',{style:{fontSize:'22px'}},'OpenCode')];
+const logo=()=>[O.logo(44),h('b',{style:{fontSize:'22px'}},'OCM Hybrid')];
 function login(msg){
   const st=O.native.state();
   let em=null,gb=null,gbtn=null;
@@ -32,7 +32,7 @@ function login(msg){
     h('span',{class:'mut s',style:{marginTop:'10px'}},'Бесплатные модели работают сразу. Личную квоту Zen можно подключить позже: Настройки → Аккаунт opencode.'),
     h('span',{class:'mut s'},'v'+st.version))}
 function perms(){const render=()=>{const rows=O.permRows();const box=el&&el.querySelector('#pl');if(box){box.textContent='';box.append(...rows)}};permsRender=render;
-  screen(h('div',{style:{textAlign:'left',width:'100%'}},h('b',{style:{fontSize:'20px'}},'Разрешения'),h('p',{class:'mut'},'OpenCode нужны эти разрешения, чтобы работать как терминальным агентом на компьютере.'),h('div',{id:'pl'},...O.permRows()),
+  screen(h('div',{style:{textAlign:'left',width:'100%'}},h('b',{style:{fontSize:'20px'}},'Разрешения'),h('p',{class:'mut'},'OCM Hybrid нужны эти разрешения, чтобы работать как терминальным агентом на телефоне.'),h('div',{id:'pl'},...O.permRows()),
     h('button',{class:'btn pri wide',style:{marginTop:'14px'},onclick:()=>{O.store.set('permsSeen',true);permsRender=null;next()}},'Продолжить')))}
 let inst=null;
 function install(){const bar=h('i'),msg=h('p',{class:'mut'},'Распаковываем Linux-окружение. Это происходит один раз.'),err=h('p',{class:'err'});
@@ -43,7 +43,7 @@ O.on('install',d=>{if(!inst||!el)return;
     if(!el.querySelector('.retry'))el.firstChild.append(h('button',{class:'btn retry',onclick:install},O.icon('refresh'),'Повторить'));
     if(!el.querySelector('.reset'))el.firstChild.append(h('button',{class:'btn reset',style:{marginTop:'8px'},onclick:()=>OC.resetInstall()},O.icon('trash'),'Сбросить и установить заново'))}
   else if(d.done){inst=null;start()}else inst.bar.style.width=d.pct+'%'});
-const PHASES={proxy:['Готовим прокси','Preparing proxy'],starting:['Запускаем ядро OpenCode','Starting the OpenCode core'],waiting:['Ждём ответа сервера','Waiting for the server'],ready:['Готово','Ready'],down:['Сервер остановлен','Server stopped'],idle:['Запуск OpenCode','Starting OpenCode']};
+const PHASES={proxy:['Готовим прокси','Preparing proxy'],starting:['Запускаем ядро','Starting the core'],waiting:['Ждём ответа сервера','Waiting for the server'],ready:['Готово','Ready'],down:['Сервер остановлен','Server stopped'],idle:['Запуск OCM Hybrid','Starting OCM Hybrid']};
 function paintPhase(ph){
   const p=el&&el.querySelector('.boot-phase');if(!p)return;
   const t=PHASES[ph]||PHASES.idle;
@@ -54,7 +54,7 @@ function paintPhase(ph){
   if(bar)bar.querySelectorAll('i').forEach((d,k)=>d.classList.toggle('on',k<=i));
 }
 function start(){
-  const msg=h('p',{class:'mut boot-phase'},O.tr('Starting OpenCode','Запуск OpenCode')),err=h('p',{class:'err'}),extra=h('div');
+  const msg=h('p',{class:'mut boot-phase'},O.tr('Starting OCM Hybrid','Запуск OCM Hybrid')),err=h('p',{class:'err'}),extra=h('div');
   const spin=h('span',{class:'spin'});
   const steps=h('div',{class:'boot-steps'},['i','i','i','i'].map(()=>h('i')));
   screen(logo(),h('div',{style:{display:'flex',gap:'8px',alignItems:'center'}},spin,msg),steps,err,extra);

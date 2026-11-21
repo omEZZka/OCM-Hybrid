@@ -23,7 +23,7 @@ object Updater {
 
     private fun open(url: String): HttpURLConnection {
         val c = URL(url).openConnection() as HttpURLConnection
-        c.setRequestProperty("User-Agent", "OpenCode-Mobile")
+        c.setRequestProperty("User-Agent", "OCM-Hybrid")
         c.setRequestProperty("Accept", "application/vnd.github+json")
         c.instanceFollowRedirects = true
         c.connectTimeout = 10_000; c.readTimeout = 30_000
@@ -35,7 +35,7 @@ object Updater {
     fun latestApp(): AppUpdate? {
         val j = JSONObject(getText("https://api.github.com/repos/${BuildConfig.GITHUB_REPO}/releases/latest"))
         val assets = j.getJSONArray("assets")
-        val re = Regex("""OpenCode-([\d.]+)-(\d+)\.apk""")
+        val re = Regex("""(?:OCMHybrid|OpenCodeUnified)-([\d.]+)-(\d+)\.apk""")
         for (i in 0 until assets.length()) {
             val a = assets.getJSONObject(i)
             val m = re.matchEntire(a.getString("name")) ?: continue

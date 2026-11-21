@@ -572,7 +572,7 @@ O.openCrashLog=()=>{
     h('div',{class:'settings-row-icon amber'},O.icon('bug')),
     h('div',{class:'settings-row-text'},h('b',null,c.msg),h('span',null,c.src+' · '+O.ago(c.at))))));
   if(l.length)body.append(h('button',{class:'btn wide',style:{marginTop:'10px'},onclick:()=>{
-    O.native.share('OpenCode Mobile crash report\n'+l.map(c=>new Date(c.at).toISOString()+' '+c.src+' '+c.msg).join('\n'));
+    O.native.share('OCM Hybrid crash report\n'+l.map(c=>new Date(c.at).toISOString()+' '+c.src+' '+c.msg).join('\n'));
   }},O.icon('share'),O.tr('Share report','Поделиться отчётом')));
   O.sheet(O.tr('Error log (local)','Журнал ошибок (локально)'),body,{full:true});
 };
@@ -586,7 +586,7 @@ function showLock(){
   lockOverlay=h('div',{class:'app-lock'},
     h('div',{class:'app-lock-box'},
       O.logo?O.logo(40):O.icon('shield'),
-      h('b',null,'OpenCode Mobile'),
+      h('b',null,'OCM Hybrid'),
       h('p',{class:'mut'},O.tr('Locked','Заблокировано')),
       h('button',{class:'btn pri wide',onclick:unlock},O.icon('shield'),O.tr('Unlock','Разблокировать'))));
   document.body.append(lockOverlay);
@@ -604,7 +604,7 @@ function unlock(){
     else if(!d.retry){off();unlockOff=null;O.toast(d.err||O.tr('Unlock failed','Не удалось разблокировать'),3000)}
   });
   unlockOff=off;
-  O.native.biometricUnlock(id,'OpenCode Mobile');
+  O.native.biometricUnlock(id,'OCM Hybrid');
 }
 O.initAppLock=()=>{
   if(O.appLock()&&O.native.biometricAvailable())showLock();
@@ -814,7 +814,7 @@ O.openTour=()=>{
   ];
   let i=0;
   const body=h('div',{style:{textAlign:'center',padding:'8px 4px'}});
-  const s=O.sheet(O.tr('Welcome to OpenCode Mobile','Добро пожаловать в OpenCode Mobile'),body,{hud:true,onClose:()=>O.store.set('tourSeen',true)});
+  const s=O.sheet(O.tr('Welcome to OCM Hybrid','Добро пожаловать в OCM Hybrid'),body,{hud:true,onClose:()=>O.store.set('tourSeen',true)});
   const draw=()=>{
     body.textContent='';
     const [icon,title,text]=steps[i];

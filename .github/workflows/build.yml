@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 env:
-  VERSION_NAME: "3.0.0"
+  VERSION_NAME: "3.1.0"
 
 jobs:
   build:
@@ -84,17 +84,22 @@ jobs:
           GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
-          # Stay above every previously published versionCode (the 1.1.x upstream-client line
-          # reached 29887625), so this build installs over anything shipped before it.
+          # OCM Hybrid is its own package (app.ocmhybrid) with its own version line; it never has
+          # to out-rank the original OpenCode's versionCodes.
           CODE=$((31000000 + GITHUB_RUN_NUMBER))
           gradle :app:assembleRelease --no-daemon -PappVersionName="$VERSION_NAME" -PappVersionCode="$CODE"
-          cp app/build/outputs/apk/release/app-release.apk "OpenCodeUnified-${VERSION_NAME}-${CODE}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "OCMHybrid-${VERSION_NAME}-${CODE}.apk"
           {
-            echo "OpenCode Mobile ${VERSION_NAME}"
+            echo "OCM Hybrid ${VERSION_NAME}"
             echo
             echo "Core: opencode $(grep opencode_core runtime-info.txt | cut -d= -f2) (1.x line) + Linux rootfs proot"
             echo
-            echo "3.0.0 — четыре агента в одном приложении:"
+            echo "3.1.0 — отдельное приложение OCM Hybrid:"
+            echo "- Свой пакет app.ocmhybrid: ставится рядом с OpenCode, не обновляет его и не пересекается с ним"
+            echo "- Обновления сохраняют всё: чаты, ключи, настройки и установленные движки"
+            echo "- Движки перенесены в HOME: обновление ядра больше не стирает Hermes / TITAN / TITAN CLI"
+            echo "- При обновлении ядра переносятся /usr/local, пакеты apt и их база"
+            echo 
             echo "- Настройки → Интерфейс: переключение между OpenCode, Hermes Agent, TITAN и TITAN CLI"
             echo "- Hermes Agent (Nous Research): самообучающийся агент со своей веб-панелью"
             echo "- TITAN: Mission Control, команда агентов и общая память"
@@ -109,7 +114,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: OpenCode Unified ${{ env.VERSION_NAME }} (build ${{ github.run_number }})
+          name: OCM Hybrid ${{ env.VERSION_NAME }} (build ${{ github.run_number }})
           body_path: notes.md
-          files: OpenCodeUnified-*.apk
+          files: OCMHybrid-*.apk
           make_latest: true

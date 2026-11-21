@@ -986,7 +986,7 @@ O.openConnect=async()=>{
                   options:{
                     baseURL:'https://openrouter.ai/api/v1',
                     apiKey:key,
-                    headers:{'HTTP-Referer':'https://opencode.mobile','X-Title':'OpenCode Mobile'}
+                    headers:{'HTTP-Referer':'https://opencode.mobile','X-Title':'OCM Hybrid'}
                   }
                 },obj.provider.openrouter||{});
               }else if(p.id==='groq'){
@@ -1077,7 +1077,7 @@ O.openCustomProvider=parentSheet=>{
       const hd={'Accept':'application/json'};if(key)hd['Authorization']='Bearer '+key;
       if(url.includes('openrouter.ai')||idInp.value==='openrouter'){
         hd['HTTP-Referer']='https://opencode.mobile';
-        hd['X-Title']='OpenCode Mobile';
+        hd['X-Title']='OCM Hybrid';
       }
       // Native bridge first: a WebView fetch to a third-party host is blocked by CORS.
       let json=null;
@@ -1123,7 +1123,7 @@ O.openCustomProvider=parentSheet=>{
       provOpts.upstreamBaseURL=url;
     }
     if(pid==='openrouter'||url.includes('openrouter.ai')){
-      provOpts.headers={'HTTP-Referer':'https://opencode.mobile','X-Title':'OpenCode Mobile'};
+      provOpts.headers={'HTTP-Referer':'https://opencode.mobile','X-Title':'OCM Hybrid'};
     }
     obj.provider[pid]={name:pname,npm:'@ai-sdk/openai',options:provOpts,models:mo};
     const w=O.native.cfgWrite(JSON.stringify(obj,null,2));
